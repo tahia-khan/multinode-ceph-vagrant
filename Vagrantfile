@@ -8,13 +8,19 @@ Vagrant.configure("2") do |config|
   config.ssh.insert_key = false
   config.hostmanager.enabled = true
   config.cache.scope = :box
+  
+  config.vm.provider 'virtualbox' do |vb|
+     vb.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 50 ]
+     vb.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-start", 1 ]
+     vb.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-interval", 1000 ]
+  end
 
   # We need one Ceph admin machine to manage the cluster
   config.vm.define "ceph-admin" do |admin|
     admin.vm.hostname = "ceph-admin"
     admin.vm.network :private_network, ip: "172.21.12.10"
     admin.vm.provision :shell, :inline => "wget -q -O- 'https://ceph.com/git/?p=ceph.git;a=blob_plain;f=keys/release.asc' | apt-key add -", :privileged => true
-    admin.vm.provision :shell, :inline => "echo deb http://ceph.com/debian-hammer/ $(lsb_release -sc) main | tee /etc/apt/sources.list.d/ceph.list", :privileged => true
+    admin.vm.provision :shell, :inline => "echo deb https://download.ceph.com/debian-kraken/ $(lsb_release -sc) main | tee /etc/apt/sources.list.d/ceph.list", :privileged => true
     admin.vm.provision :shell, :inline => "DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -yq ceph-deploy", :privileged => true
   end
 
